@@ -4,8 +4,8 @@ class Step {
         this.action = action;
     }
 
-    performAction() {
-        this.action();
+    performAction(data) {
+        this.action(data);
     }
 
     printName() {
@@ -14,12 +14,27 @@ class Step {
 }
 
 class Workflow {
-    constructor(step) {
-        this.step = step;
+    constructor(steps, initialData) {
+        this.steps = steps;
+        this.data = {
+            variables: {},
+            errors: {}
+        }
+
+        if (initialData) {
+            this.setInitialData(initialData);
+        }
+    }
+
+    setInitialData(data) {
+        this.data.variables = {...this.data.variables, ...data};
     }
 
     startWorkflow() {
-        this.step.performAction();
+        this.steps.forEach(step => {
+            step.performAction(this.data);
+            console.log(this.data);
+        });
     }
 
     printName() {
