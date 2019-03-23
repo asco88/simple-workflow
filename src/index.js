@@ -13,15 +13,24 @@ class Step {
 }
 
 class Workflow {
-    constructor(steps, initialData) {
-        this.steps = steps;
+    constructor(steps, initialData, res) {
+        this.steps = steps || [];
         this.data = {
             variables: {},
-            errors: {}
+            errors: {},
+            response: {
+                status: 200,
+                body: {}
+            }
         }
+        this.res = res;
         this.pos = 0;
-        this.errorHandler = () => {
-            console.log('this is some default error handler');
+
+        this.errorHandler = (data) => {
+            console.log('this is some default error handler ' + JSON.stringify(data));
+        }
+        this.responseHandler = () => {
+            this.res.json({});
         }
 
         if (initialData) {
@@ -33,6 +42,15 @@ class Workflow {
         this.data.variables = {...this.data.variables, ...data};
     }
 
+    setResponse(response) {
+        this.response = response;
+    }
+
+    setPromise(resolve, reject) {
+        this.resolve = resolve;
+        this.reject = reject;
+    }
+
     addStep(step) {
         this.steps.push(step);
     }
@@ -41,20 +59,29 @@ class Workflow {
         this.errorHandler = handler;
     }
 
+    setResponseHandler(handler) {
+        this.responseHandler = handler;
+    }
+
     startWorkflow() {
         this.startNextStep();
     }
 
     startNextStep() {
-        var date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-        var time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-        var dateTime = date+' '+time;
+        var date = `${today.getFullYear()}-${today.getMonth()+1}-${today.getDate()}`;
+        var time = `${today.getHours()}:${today.getMinutes()}:${today.getSeconds()}`;
+        var dateTime = `${date} ${time}`;
 
         console.log(`[${dateTime} | step: ${this.steps[this.pos].name}]`);
         this.steps[this.pos].performAction(this.data, (nextPos) => {
             if (Object.keys(this.data.errors).length === 0) {
                 this.pos = nextPos || this.pos + 1;
-                this.startNextStep();
+                if (this.pos === this.steps.length) {
+                    this.responseHandler(this.data, this.resolve, this.reject);
+                } else {
+                    this.startNextStep();
+                }
+
             } else {
                 console.log(`[${dateTime} | error]`);
                 this.errorHandler(this.data);
