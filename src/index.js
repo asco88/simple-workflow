@@ -13,17 +13,22 @@ class Step {
 }
 
 class Workflow {
-    constructor(steps, initialData, res) {
-        this.steps = steps || [];
+    constructor() {
+        this.steps = [];
         this.data = {
             variables: {},
             errors: {},
             response: {
                 status: 200,
                 body: {}
+            },
+            request: {
+                body: {},
+                headers: {},
+                params: {},
+                query: {}
             }
         }
-        this.res = res;
         this.pos = 0;
 
         this.errorHandler = (data) => {
@@ -31,10 +36,6 @@ class Workflow {
         }
         this.responseHandler = () => {
             this.res.json({});
-        }
-
-        if (initialData) {
-            this.setInitialData(initialData);
         }
     }
 
@@ -63,8 +64,24 @@ class Workflow {
         this.responseHandler = handler;
     }
 
-    startWorkflow() {
+    startWorkflow(req, res) {
+        this.res = res;
+
+        this.copyRequestOnData(req);
+
         this.startNextStep();
+    }
+
+    sendResponse() {
+        this.res.json(this.data.request.body);
+    }
+
+    copyRequestOnData(req) {
+        this.data.request.body = req.body;
+    }
+
+    copyDataOnResponse() {
+
     }
 
     startNextStep() {
@@ -77,7 +94,7 @@ class Workflow {
             if (Object.keys(this.data.errors).length === 0) {
                 this.pos = nextPos || this.pos + 1;
                 if (this.pos === this.steps.length) {
-                    this.responseHandler(this.data, this.resolve, this.reject);
+                    this.sendResponse();
                 } else {
                     this.startNextStep();
                 }
